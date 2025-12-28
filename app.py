@@ -22,8 +22,13 @@ class App:
         self.update_ui()
 
     # ---------- Process File ----------
-    def process_file(self, rules, path):
+    def process_file(self, rules, path, progressbar):
+        progressbar.set_state_message("Remove tags...")
+        progressbar.set_progress(0, 2)
         self.osm.remove_tags(rules)
+        progressbar.set_state_message("Remove elements...")
+        progressbar.set_progress(1, 2)
         self.osm.remove_elements()
         self.osm.save_file(path)
+        progressbar.stop()
         self.update_ui()

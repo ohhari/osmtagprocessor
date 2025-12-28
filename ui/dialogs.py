@@ -233,3 +233,49 @@ class TagValueDialog(tk.Toplevel):
                 self.result = str(", ".join(values))
         self.destroy()
 
+# ---------- Progess Dialog ----------        
+class ProgressDialog(tk.Toplevel):
+    def __init__(self, parent, title="Loading...", message="Please wait"):
+        super().__init__(parent)
+
+        self.title(title)
+        self.transient(parent)
+        self.grab_set()
+        self.resizable(False, False)
+
+        self.geometry("400x120")
+
+        self.state_message = tk.Label(self, text=message)
+        self.state_message.pack(pady=(15, 5))
+
+        self.progressbar = ttk.Progressbar(
+            self,
+            orient="horizontal",
+            length=350,
+            mode="determinate"
+        )
+        self.progressbar.pack(pady=10)
+
+        self.progress = tk.Label(self, text="")
+        self.progress.pack()
+
+        self.update_idletasks()
+
+    def set_state_message(self, message):
+        self.state_message = message
+        self.update_idletasks()
+
+    def set_progress(self, value, maximum):
+        self.progressbar["maximum"] = maximum
+        self.progressbar["value"] = value
+        self.progress.config(text=f"{value}/{maximum}")
+        self.update_idletasks()
+
+    def start_indeterminate(self):
+        self.progressbar.config(mode="indeterminate")
+        self.progressbar.start(10)
+
+    def stop(self):
+        self.progressbar.stop()
+        self.destroy()
+

@@ -6,7 +6,8 @@ from ui.dialogs import (
     TagValueDialog,
     AssociatedTagDialog,
     TagElementDialog,
-    InputDialog
+    InputDialog,
+    ProgressDialog
 )
 from utils import tree_helpers
 
@@ -100,7 +101,7 @@ class MainWindow(tk.Tk):
 
     def show_tags(self, tag_counts):
         from collections import defaultdict
-        # links gruppieren nach Prefix
+        # Delete all old items from tree
         for item in self.tree_left.get_children():
             self.tree_left.delete(item)
 
@@ -241,4 +242,6 @@ class MainWindow(tk.Tk):
         )
         if path:
             rules = tree_helpers.tree_to_rules(self.tree_right)
-            self.app.process_file(rules, path)
+            progessbar = ProgressDialog(self, "Processing...", "Initializing..")
+            progessbar.start_indeterminate
+            self.app.process_file(rules, path, progessbar)
