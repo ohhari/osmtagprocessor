@@ -1,10 +1,13 @@
 import tkinter as tk
 import json
-from tkinter import ttk
-from tkinter import filedialog
-from tkinter import font
+from tkinter import ttk, filedialog, font
 from ui.dragdrop import TreeDragDrop
-from ui import dialogs
+from ui.dialogs import (
+    TagValueDialog,
+    AssociatedTagDialog,
+    TagElementDialog,
+    InputDialog
+)
 from utils import tree_helpers
 
 class MainWindow(tk.Tk):
@@ -15,12 +18,15 @@ class MainWindow(tk.Tk):
         self.minsize(1200, 600)
         self.resizable(True, True)
 
-        self.selected_tag_key = None
-        self.item_clipboard = None
+        self._init_state
         self._build_ui()
 
+    def _init_state(self):
+        self.selected_tag_key = None
+        self.item_clipboard = None
+
     def _build_ui(self):
-        # ---------- Menü ----------
+        # ---------- Menu ----------
         menubar = tk.Menu(self)
         menubar.add_command(label="Open File", command=self.load_osm_file)
         self.config(menu=menubar)
@@ -36,11 +42,11 @@ class MainWindow(tk.Tk):
         self.lb_node = tk.Label(frame_labels, text="Nodes: 0")
         self.lb_node.pack(side="left", padx=10)
 
-        # ---------- Hauptframe ----------
+        # ---------- Mainframe ----------
         frame_main = tk.Frame(self)
         frame_main.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Treeview links
+        # ---------- Left Treeview (Loaded OSM) ----------
         self.tree_left = ttk.Treeview(frame_main, columns=("count",))
         self.tree_left.heading("#0", text="Tag")
         self.tree_left.column("#0", width=80, anchor="center")
@@ -50,11 +56,11 @@ class MainWindow(tk.Tk):
         self.tree_left.bind("<Double-1>", lambda event: self.on_tag_double_click(self.tree_left, None, event))
         self.tree_left.bind("<Button-3>", lambda event: self.on_tag_right_click(self.tree_left, False, event))
 
-        # ---------- Rechter Container ----------
+        # ---------- Right Frame ----------
         frame_right = tk.Frame(frame_main)
         frame_right.pack(side="left", fill="both", expand=True, padx=(5, 0))
 
-        # Treeview rechts
+        # ---------- Right Treeview (Filter) ----------
         self.tree_right = ttk.Treeview(frame_right, columns=("values",))
         self.tree_right.heading("#0", text="Category / Tags")
         self.tree_right.column("#0", width=80, anchor="center")
@@ -66,13 +72,13 @@ class MainWindow(tk.Tk):
         self.tree_right.bind("<Button-3>", lambda event: self.on_tag_right_click(self.tree_right, True, event))
         self.tree_right.bind("<Delete>", lambda event: self.on_element_delete(self.tree_right, event))
 
-        #Bold setzen
+        # ---------- Category Style ----------
         base_font = font.nametofont("TkDefaultFont")  
         bold_font = base_font.copy()
         bold_font.configure(weight="bold")
         self.tree_right.tag_configure("bold", font=bold_font, foreground="#3333aa")
 
-        # Buttons unter rechtem Tree Trees
+        # ---------- Button Frame and Buttons ----------
         frame_buttons = tk.Frame(frame_right)
         frame_buttons.pack(padx=5)
         tk.Button(frame_buttons, text="New Categorie", command=self.add_category).pack(side="left", fill="x", pady=2)
@@ -123,12 +129,12 @@ class MainWindow(tk.Tk):
         self.selected_tag_key = tag_key
         if not "category" in tree.item(item, "tags"):
             if mode:
-                dialog = dialogs.TagValueDialog(self, tag_key, self.app.osm.root, mode, tree.item(item, "values"))
+                dialog = TagValueDialog(self, tag_key, self.app.osm.root, mode, tree.item(item, "values"))
                 self.wait_window(dialog)
                 if dialog.result:
                     self.tree_right.item(item, values=(dialog.result,))
             else:
-                dialogs.TagValueDialog(self, tag_key, self.app.osm.root, mode)
+                TagValueDialog(self, tag_key, self.app.osm.root, mode)
 
     def on_tag_right_click(self, tree, mode, event):
         item = tree.identify_row(event.y)
@@ -141,7 +147,7 @@ class MainWindow(tk.Tk):
             tree.selection_set(item)
             self.selected_tag_key = tree.item(item, "text")
             if "tag" in tree.item(item, "tags") or not mode:
-                menu.add_command(label="Browse elements", command=lambda: dialogs.TagElementDialog(self, self.selected_tag_key, self.app.osm.root))
+                menu.add_command(label="Browse elements", command=lambda: TagElementDialog(self, self.selected_tag_key, self.app.osm.root))
                 menu.add_command(label="Show associated elements", command=lambda: self.on_show_assoc_tag(mode))
             menu.add_command(label="Copy Element", command=lambda: self.on_tag_copy(item))
             if mode:
@@ -154,32 +160,8 @@ class MainWindow(tk.Tk):
 
     def on_element_delete(self, tree, event=None):
         for item in tree.selection():
-            tree_helpers.delete_item(tree, item)
-
-    def load_osm_file(self):
-        path = filedialog.askopenfilename(
-            title="Select File...",
-            filetypes=[("OSM-File", "*.osm*")]
-        )
-        if path:
-            self.app.load_osm_file(path)
-    
-    def add_tag(self):
-        sel = self.tree_right.selection()
-        if not sel:
-            return
-        parent = sel[0]
-        dialog = dialogs.InputDialog(self, "New Tag-Key", "Tag-Key:")
-        self.wait_window(dialog)
-        if dialog.result:
-            self.tree_right.insert(parent, "end", text=dialog.result, tags=("tag",))
-
-    def add_category(self):
-        dialog = dialogs.InputDialog(self, "New Category", "Category name:")
-        self.wait_window(dialog)
-        if dialog.result:
-            self.tree_right.insert("", "end", text=dialog.result, tags=("category","bold"))
-        
+            tree.delete(item)
+ 
     def on_tag_copy(self, selected_item):
         self.item_clipboard = selected_item
     
@@ -192,13 +174,41 @@ class MainWindow(tk.Tk):
             tree_helpers.copy_item(self.tree_left, self.tree_right, self.item_clipboard, parent)
 
     def on_show_assoc_tag(self, mode):
-        dialog = dialogs.AssociatedTagDialog(self, self.selected_tag_key, self.app.osm.root, mode)
+        dialog = AssociatedTagDialog(self, self.selected_tag_key, self.app.osm.root, mode)
         self.wait_window(dialog)
         if dialog.result and mode:
             parent = self.tree_right.selection()
             for child in dialog.result:
                 self.tree_right.insert(parent, "end", text=child, tags=("tag",))
 
+    # ---------- Load osm file from path into treeview ----------
+    def load_osm_file(self):
+        path = filedialog.askopenfilename(
+            title="Select File...",
+            filetypes=[("OSM-File", "*.osm*")]
+        )
+        if path:
+            self.app.load_osm_file(path)
+
+     # ---------- Add tag to category/tag on filter tree ----------   
+    def add_tag(self):
+        sel = self.tree_right.selection()
+        if not sel:
+            return
+        parent = sel[0]
+        dialog = InputDialog(self, "New Tag-Key", "Tag-Key:")
+        self.wait_window(dialog)
+        if dialog.result:
+            self.tree_right.insert(parent, "end", text=dialog.result, tags=("tag",))
+
+    # ---------- Add catetgory on filter tree ----------
+    def add_category(self):
+        dialog = InputDialog(self, "New Category", "Category name:")
+        self.wait_window(dialog)
+        if dialog.result:
+            self.tree_right.insert("", "end", text=dialog.result, tags=("category","bold"))
+
+    # ---------- Load filter from JSON ----------
     def load_filter(self):
         path = filedialog.askopenfilename(
             title="Load File...",
@@ -210,6 +220,7 @@ class MainWindow(tk.Tk):
             self.tree_right.delete(*self.tree_right.get_children())
             tree_helpers.dict_to_tree(self.tree_right, data)
 
+    # ---------- Save filter to JSON ----------
     def save_filter(self):
         path = filedialog.asksaveasfilename(
             title="Save File...",
@@ -221,6 +232,7 @@ class MainWindow(tk.Tk):
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
+    # ---------- Apply filter on OSM file ----------
     def apply_filter(self):
         path = filedialog.asksaveasfilename(
             title="Save File...",

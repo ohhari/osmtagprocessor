@@ -3,6 +3,7 @@ from collections import defaultdict
 from collections import Counter
 from tkinter import ttk
 
+# ---------- Input Dialog, returns Input ----------
 class InputDialog(tk.Toplevel):
     def __init__(self, parent, title, label_text):
         super().__init__(parent)
@@ -28,10 +29,10 @@ class InputDialog(tk.Toplevel):
             self.result = key
         self.destroy()
 
+# ---------- Shows associated tags, returns selected tags ----------
 class AssociatedTagDialog(tk.Toplevel):
     def __init__(self, parent, tag_key, file_tree_root, mode=False):
         """
-        Dialog for Assoziated Tags
         mode=False: browse
         mode=True: select
         """
@@ -44,9 +45,8 @@ class AssociatedTagDialog(tk.Toplevel):
         self.grab_set()
         self.geometry("400x300")
 
-        # Zähle assoziierte Tags
+        #Count associated tags
         assoc_counts = Counter()
-
         for elem in file_tree_root.xpath(".//node | .//way | .//relation"):
             tags = [t.get("k") for t in elem.findall("tag")]
             if tag_key not in tags:
@@ -56,6 +56,7 @@ class AssociatedTagDialog(tk.Toplevel):
                 if k != tag_key:
                     assoc_counts[k] += 1
 
+        #Frame & Listbox
         frame = tk.Frame(self)
         frame.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -69,6 +70,7 @@ class AssociatedTagDialog(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
         self.listbox.config(yscrollcommand=scrollbar.set)
 
+        #Sort tags based on count
         for tag, count in assoc_counts.most_common():
             self.listbox.insert("end", f"{tag} ({count})")
         
@@ -86,6 +88,7 @@ class AssociatedTagDialog(tk.Toplevel):
                 self.result = selected_values
         self.destroy()
 
+# ---------- Show elements with tag ----------
 class TagElementDialog(tk.Toplevel):
     def __init__(self, parent, tag_key, file_tree_root):
         super().__init__(parent)
@@ -95,6 +98,7 @@ class TagElementDialog(tk.Toplevel):
         self.grab_set()
         self.geometry("700x500")
 
+        #Frame & Treeview
         frame = tk.Frame(self)
         frame.pack(fill="both", expand=True)
 
@@ -106,7 +110,7 @@ class TagElementDialog(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
         tree.configure(yscrollcommand=scrollbar.set)
 
-        # populate tree
+        #Search through all elements, add elements with tag to treeview
         sections = {"Nodes": ".//node", "Ways": ".//way", "Relations": ".//relation"}
         for section_name, xpath in sections.items():
             section_item = None
@@ -128,10 +132,10 @@ class TagElementDialog(tk.Toplevel):
         self.bind("<Escape>", lambda e: self.destroy())
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 
+# ---------- Shows tag values for tag, returns selected values ----------
 class TagValueDialog(tk.Toplevel):
     def __init__(self, parent, tag_key, tree, mode=None, tag_values=""):
         """
-        Dialog for Tag-Values
         mode=None: browse
         mode=False: browse and select
         mode=True: select and edit
@@ -157,7 +161,7 @@ class TagValueDialog(tk.Toplevel):
                 values = [tag.get("v") for tag in self.tree.findall(".//tag") if tag.get("k") == tag_key]
                 value_counts = Counter(values)
 
-        #Frame for listbox and scrollbar
+        #Frame, listbox & scrollbar
         frame_list = tk.Frame(self)
         frame_list.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -190,7 +194,6 @@ class TagValueDialog(tk.Toplevel):
             tk.Button(frame_buttons, text="Delete Value", command=self.delete).pack(side="left", padx=5)
         tk.Button(frame_buttons, text="OK", command=self.confirm).pack(side="left", padx=5)     
 
-        # Bindings
         self.bind("<Escape>", lambda e: self.destroy())
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 

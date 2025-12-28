@@ -1,45 +1,19 @@
 from tkinter import ttk
 
-def clear_tree(tree: ttk.Treeview):
-    """Löscht alle Items aus einem Treeview"""
-    tree.delete(*tree.get_children())
-
-def insert_tree_item(tree: ttk.Treeview, parent, text, values=None, open=False):
-    """Fügt ein Item in einen Treeview ein"""
-    values = values or ()
-    return tree.insert(parent, "end", text=text, values=values, open=open)
-
 def copy_item(source: ttk.Treeview, target: ttk.Treeview, item, parent=""):
     """
-    Verschiebt ein Item samt allen Unterelementen von source zu target.
-    Liefert das neue Ziel-Item zurück.
+    Copies item from source to target with all child items
+    Returns new item
     """
     text = source.item(item, "text")
     #values = source.item(item, "values")
-    new_item = target.insert(parent, "end", text=text, tags=("tag",))#, values=values)
+    new_item = target.insert(parent, "end", text=text, tags=("tag",))
 
     for child in source.get_children(item):
         copy_item(source, target, child, parent=new_item)
     return new_item
 
-def get_selected_text(tree: ttk.Treeview):
-    """
-    Gibt die Texte der aktuell selektierten Items als Liste zurück
-    """
-    return [tree.item(i, "text") for i in tree.selection()]
-
-def expand_all(tree: ttk.Treeview, item=""):
-    """Alle Unterelemente eines Treeview-Items aufklappen"""
-    children = tree.get_children(item)
-    for c in children:
-        tree.item(c, open=True)
-        expand_all(tree, c)
-
-def delete_item(tree: ttk.Treeview, item):
-    """Löscht Item aus einem Treeview"""
-    tree.delete(item)
-
-def tree_to_dict(tree, item=""):
+def tree_to_dict(tree: ttk.Treeview, item=""):
     result = []
     for child in tree.get_children(item):
         node = {
@@ -51,7 +25,7 @@ def tree_to_dict(tree, item=""):
         result.append(node)
     return result
 
-def dict_to_tree(tree, data, parent=""):
+def dict_to_tree(tree: ttk.Treeview, data, parent=""):
     for node in data:
         item = tree.insert(
             parent,
@@ -62,36 +36,7 @@ def dict_to_tree(tree, data, parent=""):
         )
         dict_to_tree(tree, node.get("children", []), item)
 
-def tree_to_whitelist(tree):
-    keep_tags = {}
-
-    # Categories
-    for category_item in tree.get_children(""):
-        # Tags per Category
-        for tag_item in tree.get_children(category_item):
-
-            tag_key = tree.item(tag_item, "text").strip()
-            if not tag_key:
-                continue
-
-            raw_values = tree.item(tag_item, "values")
-            raw = raw_values[0] if raw_values else ""
-
-            if raw:
-                values = {
-                    v.strip()
-                    for v in raw.split(",")
-                    if v.strip()
-                }
-                keep_tags[tag_key] = values if values else None
-            else:
-                keep_tags[tag_key] = None
-
-            # children von tag_item not evaluatee
-    print(keep_tags)
-    return keep_tags
-
-def tree_to_rules(tree):
+def tree_to_rules(tree: ttk.Treeview):
     rules = []
 
     def parse_item(item):

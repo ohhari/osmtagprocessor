@@ -19,7 +19,6 @@ class TreeDragDrop:
         if not item:
             return
         self.dragged_item = item
-        #self.dragged_text = self.tree_left.item(item, "text")
 
     def on_drag_motion(self, event):
         if self.drag:
@@ -37,14 +36,6 @@ class TreeDragDrop:
             target_item = self.tree_right.selection()
             if target_item:
                 parent = target_item
-                
-            #else:
-            #    parent = ""
-
-            #existing = [self.tree_right.item(c, "text") for c in self.tree_right.get_children(parent)]
-            #if self.dragged_text in existing:
-            #    self.reset_drag()
-            #    return
                 tree_helpers.copy_item(self.tree_left, self.tree_right, self.dragged_item, parent)
         self.reset_drag()
 
