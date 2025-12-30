@@ -18,13 +18,9 @@ class MainWindow(tk.Tk):
         self.title("OSM Tag Processor")
         self.minsize(1200, 600)
         self.resizable(True, True)
-
-        self._init_state
-        self._build_ui()
-
-    def _init_state(self):
         self.selected_tag_key = None
         self.item_clipboard = None
+        self._build_ui()
 
     def _build_ui(self):
         # ---------- Menu ----------
@@ -94,10 +90,10 @@ class MainWindow(tk.Tk):
         self.dragdrop = TreeDragDrop(self.tree_left, self.tree_right)
 
     # ---------- Update UI ----------
-    def update_counts(self, counts):
-        self.lb_node.config(text=f"Nodes: {counts['nodes']}")
-        self.lb_way.config(text=f"Ways: {counts['ways']}")
-        self.lb_rel.config(text=f"Relations: {counts['relations']}")
+    def update_counts(self):
+        self.lb_node.config(text=f"Nodes: {self.app.osm.node_cnt}")
+        self.lb_way.config(text=f"Ways: {self.app.osm.way_cnt}")
+        self.lb_rel.config(text=f"Relations: {self.app.osm.relation_cnt}")
 
     def show_tags(self, tag_counts):
         from collections import defaultdict
@@ -189,7 +185,10 @@ class MainWindow(tk.Tk):
             filetypes=[("OSM-File", "*.osm*")]
         )
         if path:
-            self.app.load_osm_file(path)
+            progressbar = ProgressDialog(self, "Processing...", "Initializing..")
+            progressbar.start_indeterminate
+            self.app.load_osm_file(path, progressbar)
+            progressbar.stop
 
      # ---------- Add tag to category/tag on filter tree ----------   
     def add_tag(self):
@@ -242,6 +241,7 @@ class MainWindow(tk.Tk):
         )
         if path:
             rules = tree_helpers.tree_to_rules(self.tree_right)
-            progessbar = ProgressDialog(self, "Processing...", "Initializing..")
-            progessbar.start_indeterminate
-            self.app.process_file(rules, path, progessbar)
+            progressbar = ProgressDialog(self, "Processing...", "Initializing..")
+            progressbar.start_indeterminate
+            self.app.process_file(rules, path, progressbar)
+            progressbar.stop

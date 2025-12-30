@@ -11,24 +11,19 @@ class App:
 
     # ---------- Update UI ----------
     def update_ui(self):
-        counts = self.osm.count_elements()
+        self.osm.count_elements()
         tags = self.osm.count_tags()
-        self.window.update_counts(counts)
+        self.window.update_counts()
         self.window.show_tags(tags)
 
     # ---------- Load File ----------
-    def load_osm_file(self, path):
-        self.osm.load_file(path)
+    def load_osm_file(self, path, progressbar):
+        self.osm.load_file(path, progressbar)
         self.update_ui()
 
     # ---------- Process File ----------
     def process_file(self, rules, path, progressbar):
-        progressbar.set_state_message("Remove tags...")
-        progressbar.set_progress(0, 2)
-        self.osm.remove_tags(rules)
-        progressbar.set_state_message("Remove elements...")
-        progressbar.set_progress(1, 2)
-        self.osm.remove_elements()
+        self.osm.remove_tags(rules, progressbar)
+        self.osm.remove_elements(progressbar)
         self.osm.save_file(path)
-        progressbar.stop()
         self.update_ui()

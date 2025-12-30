@@ -245,7 +245,11 @@ class ProgressDialog(tk.Toplevel):
 
         self.geometry("400x120")
 
-        self.state_message = tk.Label(self, text=message)
+        self.message_var = tk.StringVar()
+        self.message_var.set(message)
+        self.progress_var = tk.StringVar()
+
+        self.state_message = tk.Label(self, textvariable=self.progress_var)
         self.state_message.pack(pady=(15, 5))
 
         self.progressbar = ttk.Progressbar(
@@ -256,19 +260,19 @@ class ProgressDialog(tk.Toplevel):
         )
         self.progressbar.pack(pady=10)
 
-        self.progress = tk.Label(self, text="")
+        self.progress = tk.Label(self, textvariable=self.progress_var)
         self.progress.pack()
 
         self.update_idletasks()
 
     def set_state_message(self, message):
-        self.state_message = message
+        self.message_var.set(message)
         self.update_idletasks()
 
     def set_progress(self, value, maximum):
         self.progressbar["maximum"] = maximum
         self.progressbar["value"] = value
-        self.progress.config(text=f"{value}/{maximum}")
+        self.progress_var.set(f"{value}/{maximum}")
         self.update_idletasks()
 
     def start_indeterminate(self):
